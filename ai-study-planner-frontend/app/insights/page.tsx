@@ -19,7 +19,10 @@ type ScheduleDoc = {
   weekly_schedule?: Record<string, Record<string, number>>;
 };
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE =
+  typeof window === "undefined"
+    ? process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000"
+    : process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 const WEEK_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 function clamp(value: number, min: number, max: number) {

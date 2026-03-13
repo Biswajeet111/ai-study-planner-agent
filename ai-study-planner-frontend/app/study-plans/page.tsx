@@ -19,7 +19,10 @@ type StoredSchedule = {
   created_at?: string;
 };
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE =
+  typeof window === "undefined"
+    ? process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000"
+    : process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
 function RiskPill({ risk }: { risk: number }) {
   if (risk >= 60)

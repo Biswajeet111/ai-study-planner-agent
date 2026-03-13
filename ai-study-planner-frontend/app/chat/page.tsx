@@ -16,7 +16,10 @@ type ScheduleDoc = {
   weekly_schedule?: Record<string, Record<string, number>>;
 };
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE =
+  typeof window === "undefined"
+    ? process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000"
+    : process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
 const starterPrompts = [
   "Can you explain the key concepts of thermodynamics for my exam tomorrow?",

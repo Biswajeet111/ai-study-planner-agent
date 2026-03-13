@@ -24,7 +24,10 @@ type ScheduleDoc = {
   weekly_schedule?: Record<string, Record<string, number>>;
 };
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE =
+  typeof window === "undefined"
+    ? process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000"
+    : process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const sessionTimes = ["10:00 AM - 11:30 AM", "02:00 PM - 03:00 PM", "04:30 PM - 05:30 PM"];
 

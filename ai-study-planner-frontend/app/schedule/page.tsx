@@ -25,7 +25,10 @@ type ScheduleRow = {
   focusLevel: 1 | 2 | 3;
 };
 
-const API_URL = "http://127.0.0.1:8000/generate_schedule";
+const API_URL =
+  typeof window === "undefined"
+    ? `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000"}/generate_schedule`
+    : "/api/generate_schedule";
 
 const difficultyMap: Record<string, number> = {
   easy: 2,

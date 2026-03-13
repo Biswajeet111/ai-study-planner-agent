@@ -1,15 +1,38 @@
 import joblib
 import pandas as pd
-import requests
 
-MODEL_PATH = "src/models/performance_model.pkl"
+from huggingface_hub import hf_hub_download
 
-model = joblib.load(MODEL_PATH)
+
+MODEL_REPO = "Biswajeet1/study_forge"
+MODEL_FILE = "performance_model.pkl"
+
+model = None
+
+try:
+    model_path = hf_hub_download(
+        repo_id=MODEL_REPO,
+        filename=MODEL_FILE
+    )
+
+    model = joblib.load(model_path)
+
+    print("Model loaded from Hugging Face")
+
+except Exception as e:
+
+    print("Model loading failed:", e)
+    model = None
 
 
 def predict_performance(hours_studied, previous_scores, sleep_hours, sample_papers_practiced):
+
+    if model is None:
+        # fallback
+        return previous_scores
+
     input_data = pd.DataFrame(
-        [[hours, score, sleep, papers]],
+        [[hours_studied, previous_scores, sleep_hours, sample_papers_practiced]],
         columns=[
             "Hours Studied",
             "Previous Scores",
