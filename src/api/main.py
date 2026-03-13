@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
@@ -8,10 +8,6 @@ from src.services.study_planner_agent import StudyPlannerAgent
 from src.services.llm_insights import generate_insights, explain_plan, motivation_message
 from src.services.study_chatbot import study_chat
 
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-from slowapi.middleware import SlowAPIMiddleware
-
 
 # -------------------------
 # FastAPI APP
@@ -19,14 +15,6 @@ from slowapi.middleware import SlowAPIMiddleware
 
 app = FastAPI(title="AI Study Planner API")
 
-# -------------------------
-# Rate Limiter
-# -------------------------
-
-limiter = Limiter(key_func=get_remote_address)
-
-app.state.limiter = limiter
-app.add_middleware(SlowAPIMiddleware)
 
 # -------------------------
 # CORS
@@ -37,14 +25,13 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3001",
         "https://studyai-eight-delta.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # -------------------------
 # Request Models
@@ -134,8 +121,7 @@ def get_progress_updates(limit: int = 50):
 # -------------------------
 
 @app.post("/generate_schedule")
-@limiter.limit("10/minute")
-def generate_schedule(request: Request, planner: PlannerRequest):
+def generate_schedule(planner: PlannerRequest):
 
     subjects = [s.model_dump() for s in planner.subjects]
 
