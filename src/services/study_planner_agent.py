@@ -26,10 +26,10 @@ class StudyPlannerAgent:
 
         for sub in self.subjects:
             predicted_score = predict_performance(
-                hours_studied=sub["study_hours"],
-                previous_scores=sub["previous_score"],
-                sleep_hours=sub["sleep_hours"],
-                sample_papers_practiced=sub["practice_papers"]
+                hours=sub["study_hours"],
+                score=sub["previous_score"],
+                sleep=sub["sleep_hours"],
+                papers=sub["practice_papers"]
             )
 
             risk = 100 - predicted_score

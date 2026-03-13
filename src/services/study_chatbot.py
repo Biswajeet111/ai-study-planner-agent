@@ -9,22 +9,26 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 def study_chat(question, schedule_data):
 
     prompt = f"""
-You are an AI study tutor.
-
-Student study schedule:
+You are StudyForge AI, an expert, helpful AI study tutor.
+Below is the student's study schedule and data:
+---
 {schedule_data}
+---
 
 Student question:
 {question}
 
-Answer the question using the schedule data.
-Give helpful study advice.
+Instructions:
+1. Answer the student's question directly and concisely.
+2. Only reference the schedule data if it is relevant to the student's specific question. Do NOT summarize or repeat the entire schedule unless asked.
+3. Provide actionable, helpful study advice.
 """
 
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
+        temperature=0.7,
         messages=[
-            {"role": "system", "content": "You are a helpful AI study tutor."},
+            {"role": "system", "content": "You are StudyForge AI, a helpful AI study tutor."},
             {"role": "user", "content": prompt}
         ]
     )
