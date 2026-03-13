@@ -144,11 +144,17 @@ export default function PlannerPage() {
 
     setLoading(true);
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 12000);
+
       const response = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
 
       if (!response.ok) {
         const failureBody = await response.text();
@@ -173,11 +179,39 @@ export default function PlannerPage() {
         resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 50);
     } catch (err) {
+      const fallbackResult: ScheduleResponse = {
+        priority_analysis: [
+          {
+            subject: normalizedSubject,
+            predicted_score: parsedPreviousScore,
+            risk: Math.max(0, 100 - parsedPreviousScore),
+            priority: Math.max(40, 100 - parsedPreviousScore),
+          },
+        ],
+        daily_plan: { [normalizedSubject]: parsedDailyHours },
+        weekly_schedule: {
+          Monday: { [normalizedSubject]: parsedDailyHours },
+          Tuesday: { [normalizedSubject]: parsedDailyHours },
+          Wednesday: { [normalizedSubject]: parsedDailyHours },
+          Thursday: { [normalizedSubject]: parsedDailyHours },
+          Friday: { [normalizedSubject]: parsedDailyHours },
+          Saturday: { [normalizedSubject]: 0 },
+          Sunday: { [normalizedSubject]: 0 },
+        },
+        ai_insights: "API is unavailable right now, so a local fallback plan was generated. Start with this and retry backend generation once the API is up.",
+      };
+
+      setResult(fallbackResult);
+
       setError(
         err instanceof Error
-          ? `${err.message}. Start backend API on port 8000 and try again.`
+          ? `${err.name === "AbortError" ? "Request timed out" : err.message}. API is unavailable, so a local fallback plan was generated.`
           : "Unable to generate plan. Please check backend and try again.",
       );
+
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
     } finally {
       setLoading(false);
     }
