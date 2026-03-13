@@ -1,10 +1,18 @@
-# 🚀 StudyForge AI 
-![Study Forge Logo](https://raw.githubusercontent.com/Biswajeet111/ai-study-planner-agent/main/Image/Study%20Forge%20Logo.png)
-### “An adaptive AI‑powered study planning and coaching system.” 🚀
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Biswajeet111/ai-study-planner-agent/main/Image/Study%20Forge%20Logo.png" width="100">
+</p>
 
-An AI‑powered adaptive study planning system that generates personalized study schedules using Machine Learning, LLM reasoning, and adaptive feedback loops.
+<h1 align="center">🚀 StudyForge AI</h1>
 
-The system predicts student performance, creates optimized study plans, provides AI‑generated insights, and adapts schedules based on user progress.
+<p align="center">
+<b>“An adaptive AI-powered study planning and coaching system.”</b> 🚀
+</p>
+
+---
+
+An AI-powered adaptive study planning system that generates personalized study schedules using Machine Learning, LLM reasoning, and adaptive feedback loops.
+
+The system predicts student performance, creates optimized study plans, provides AI-generated insights, and adapts schedules based on user progress.
 
 ## 📌 Features
 
