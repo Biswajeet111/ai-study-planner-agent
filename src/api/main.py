@@ -10,6 +10,15 @@ from src.services.llm_insights import explain_plan
 from src.services.study_chatbot import study_chat
 from src.services.llm_insights import motivation_message
 
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.middleware import SlowAPIMiddleware
+
+limiter = Limiter(key_func=get_remote_address)
+
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
+
 
 app = FastAPI(title="AI Study Planner API")
 
@@ -76,8 +85,30 @@ def get_motivation(progress_score: float):
     message = motivation_message(progress_score)
     return {"motivation": message}
 
+@app.get("/progress_updates")
+def get_progress_updates(limit: int = 50):
+
+    safe_limit = max(1, min(limit, 200))
+    cursor = schedules_collection.find(
+        {"type": "progress_update"}
+    ).sort("_id", -1).limit(safe_limit)
+
+    updates = []
+    for row in cursor:
+        updates.append(
+            {
+                "_id": str(row.get("_id")),
+                "type": row.get("type"),
+                "data": row.get("data", {}),
+            }
+        )
+
+    return updates
+
+
 
 @app.post("/generate_schedule")
+@limiter.limit("10/minute")
 def generate_schedule(request: PlannerRequest):
 
     subjects = [s.model_dump() for s in request.subjects]
@@ -87,14 +118,16 @@ def generate_schedule(request: PlannerRequest):
         daily_hours=request.daily_hours
     )
 
-    # calculate once
     priority = agent.calculate_priority()
-
     daily_plan = agent.generate_daily_plan(priority)
-
     weekly_schedule = agent.generate_weekly_schedule(daily_plan)
 
-    insights = generate_insights(subjects, priority, daily_plan)
+    # SAFE LLM CALL
+    try:
+        insights = generate_insights(subjects, priority, daily_plan)
+    except Exception as e:
+        print("LLM insights failed:", e)
+        insights = "AI insights temporarily unavailable"
 
     schedule_data = {
         "subjects": subjects,
@@ -105,9 +138,11 @@ def generate_schedule(request: PlannerRequest):
         "ai_insights": insights
     }
 
-    result = schedules_collection.insert_one(schedule_data)
-
-    schedule_data["_id"] = str(result.inserted_id)
+    try:
+        result = schedules_collection.insert_one(schedule_data)
+        schedule_data["_id"] = str(result.inserted_id)
+    except Exception as e:
+        print("MongoDB insert error:", e)
 
     return schedule_data
 
@@ -161,26 +196,6 @@ def update_progress(progress: ProgressUpdate):
         "xp_earned": xp
     }
 
-
-@app.get("/progress_updates")
-def get_progress_updates(limit: int = 50):
-
-    safe_limit = max(1, min(limit, 200))
-    cursor = schedules_collection.find(
-        {"type": "progress_update"}
-    ).sort("_id", -1).limit(safe_limit)
-
-    updates = []
-    for row in cursor:
-        updates.append(
-            {
-                "_id": str(row.get("_id")),
-                "type": row.get("type"),
-                "data": row.get("data", {}),
-            }
-        )
-
-    return updates
 
     
 @app.post("/study_chat")

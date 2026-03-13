@@ -1,10 +1,6 @@
-from collections import defaultdict
-from src.services.performance_analyzer import predict_performance
-
-
 class StudyPlannerAgent:
-    def __init__(self, subjects, daily_hours):
 
+    def __init__(self, subjects, daily_hours):
         self.subjects = subjects
         self.daily_hours = daily_hours
 
@@ -32,7 +28,9 @@ class StudyPlannerAgent:
                 "priority": round(priority, 2)
             })
 
-        return sorted(priorities, key=lambda x: x["priority"], reverse=True)
+        priorities.sort(key=lambda x: x["priority"], reverse=True)
+
+        return priorities
 
 
     def generate_daily_plan(self, priorities):
@@ -42,12 +40,8 @@ class StudyPlannerAgent:
         schedule = {}
 
         for item in priorities:
-
-            allocated_hours = round(
-                (item["priority"] / total_priority) * self.daily_hours, 2
-            )
-
-            schedule[item["subject"]] = allocated_hours
+            hours = round((item["priority"] / total_priority) * self.daily_hours, 2)
+            schedule[item["subject"]] = hours
 
         return schedule
 
@@ -55,8 +49,8 @@ class StudyPlannerAgent:
     def generate_weekly_schedule(self, daily_plan):
 
         days = [
-            "Monday", "Tuesday", "Wednesday",
-            "Thursday", "Friday", "Saturday", "Sunday"
+            "Monday","Tuesday","Wednesday",
+            "Thursday","Friday","Saturday","Sunday"
         ]
 
         weekly_schedule = defaultdict(dict)
