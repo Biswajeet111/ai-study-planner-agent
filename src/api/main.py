@@ -7,6 +7,7 @@ from src.services.study_planner_agent import StudyPlannerAgent
 from src.services.llm_insights import generate_insights
 from src.services.llm_insights import explain_plan
 from src.services.study_chatbot import study_chat
+from src.services.llm_insights import motivation_message
 
 
 app = FastAPI(title="AI Study Planner API")
@@ -40,12 +41,17 @@ def home():
 @app.get("/schedules")
 def get_schedules():
 
-    data = list(schedules_collection.find())
+    data = list(schedules_collection.find({"subjects": {"$exists": True}}))
 
     for d in data:
         d["_id"] = str(d["_id"])
 
     return data
+
+@app.get("/motivation")
+def get_motivation(progress_score: float):
+    message = motivation_message(progress_score)
+    return {"motivation": message}
 
 @app.post("/generate_schedule")
 def generate_schedule(request: PlannerRequest):
@@ -101,10 +107,19 @@ def explain_study_plan(request: PlannerRequest):
 @app.post("/update_progress")
 def update_progress(progress: ProgressUpdate):
 
+    planned_hours = 4
+
+    progress_score = (progress.hours_completed / planned_hours) * 100 if planned_hours > 0 else 0
+
+    # XP calculation
+    xp = int(progress.hours_completed * 10)
+
     data = {
         "subject": progress.subject,
         "hours_completed": progress.hours_completed,
-        "test_score": progress.test_score
+        "test_score": progress.test_score,
+        "progress_score": progress_score,
+        "xp": xp
     }
 
     schedules_collection.insert_one({
@@ -113,16 +128,19 @@ def update_progress(progress: ProgressUpdate):
     })
 
     return {
-        "message": "Progress updated successfully"
+        "message": "Progress updated successfully",
+        "progress_score": progress_score,
+        "xp_earned": xp
     }
 
+    
 @app.post("/study_chat")
 def study_chatbot(chat: ChatRequest):
 
-    # get latest schedule
     schedule = schedules_collection.find_one(
-        sort=[("_id", -1)]
-    )
+    {"subjects": {"$exists": True}},
+    sort=[("_id", -1)]
+)
 
     if not schedule:
         return {"message": "No schedule found"}
