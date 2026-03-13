@@ -8,3 +8,5 @@ db = client["study_planner"]
 
 students_collection = db["students"]
 schedules_collection = db["schedules"]
+
+print("MongoDB connected successfully")

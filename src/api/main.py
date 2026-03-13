@@ -13,15 +13,19 @@ from src.services.llm_insights import motivation_message
 
 app = FastAPI(title="AI Study Planner API")
 
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "https://studyai-eight-delta.vercel.app",
+    "https://*.vercel.app"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3001",
-        "https://studyai-eight-delta.vercel.app",
-    ],
+    allow_origins=origins,
+    allow_origin_regex="https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,7 +60,11 @@ def home():
 @app.get("/schedules")
 def get_schedules():
 
-    data = list(schedules_collection.find({"subjects": {"$exists": True}}))
+    data = list(
+    schedules_collection.find(
+        {"subjects": {"$exists": True}}
+    ).sort("_id", -1).limit(20)
+)
 
     for d in data:
         d["_id"] = str(d["_id"])
@@ -68,10 +76,15 @@ def get_motivation(progress_score: float):
     message = motivation_message(progress_score)
     return {"motivation": message}
 
+@app.get("/db_test")
+def db_test():
+    schedules_collection.insert_one({"test": "working"})
+    return {"message": "MongoDB connected successfully"}
+
 @app.post("/generate_schedule")
 def generate_schedule(request: PlannerRequest):
 
-    subjects = [s.dict() for s in request.subjects]
+    subjects = [s.model_dump() for s in request.subjects]
 
     agent = StudyPlannerAgent(
         subjects=subjects,
@@ -102,7 +115,7 @@ def generate_schedule(request: PlannerRequest):
 @app.post("/explain_plan")
 def explain_study_plan(request: PlannerRequest):
 
-    subjects = [s.dict() for s in request.subjects]
+    subjects = [s.model_dump() for s in request.subjects]
 
     agent = StudyPlannerAgent(
         subjects=subjects,
