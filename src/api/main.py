@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List
+from src.database.mongodb import schedules_collection
 
 from src.services.study_planner_agent import StudyPlannerAgent
 
@@ -26,6 +27,16 @@ class PlannerRequest(BaseModel):
 def home():
     return {"message": "AI Study Planner API Running"}
 
+@app.get("/schedules")
+def get_schedules():
+
+    data = list(schedules_collection.find())
+
+    for d in data:
+        d["_id"] = str(d["_id"])
+
+    return data
+
 
 @app.post("/generate_schedule")
 def generate_schedule(request: PlannerRequest):
@@ -41,8 +52,17 @@ def generate_schedule(request: PlannerRequest):
     daily_plan = agent.generate_daily_plan()
     weekly_schedule = agent.generate_weekly_schedule()
 
-    return {
+    # Data to save in MongoDB
+    schedule_data = {
+        "subjects": subjects,
+        "daily_hours": request.daily_hours,
         "priority_analysis": priority,
         "daily_plan": daily_plan,
         "weekly_schedule": weekly_schedule
     }
+
+    result = schedules_collection.insert_one(schedule_data)
+
+    schedule_data["_id"] = str(result.inserted_id)
+
+    return schedule_data
