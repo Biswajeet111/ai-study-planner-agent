@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
 from src.database.mongodb import schedules_collection
@@ -11,6 +12,19 @@ from src.services.llm_insights import motivation_message
 
 
 app = FastAPI(title="AI Study Planner API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class Subject(BaseModel):
@@ -132,6 +146,27 @@ def update_progress(progress: ProgressUpdate):
         "progress_score": progress_score,
         "xp_earned": xp
     }
+
+
+@app.get("/progress_updates")
+def get_progress_updates(limit: int = 50):
+
+    safe_limit = max(1, min(limit, 200))
+    cursor = schedules_collection.find(
+        {"type": "progress_update"}
+    ).sort("_id", -1).limit(safe_limit)
+
+    updates = []
+    for row in cursor:
+        updates.append(
+            {
+                "_id": str(row.get("_id")),
+                "type": row.get("type"),
+                "data": row.get("data", {}),
+            }
+        )
+
+    return updates
 
     
 @app.post("/study_chat")
