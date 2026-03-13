@@ -1,7 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
-import { defaultUserProfile } from "../lib/userProfile";
+import { FormEvent, useMemo, useRef, useState } from "react";
 
 type PriorityItem = {
   subject: string;
@@ -70,7 +69,7 @@ function tagStyle(activityType: string) {
 }
 
 export default function PlannerPage() {
-  const [subjectName, setSubjectName] = useState("");
+  const [subjectName, setSubjectName] = useState("Mathematics");
   const [dailyHours, setDailyHours] = useState("4");
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [previousScore, setPreviousScore] = useState("78");
@@ -79,6 +78,7 @@ export default function PlannerPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ScheduleResponse | null>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const scheduleRows = useMemo<ScheduleRow[]>(() => {
     if (!result?.daily_plan) {
@@ -117,11 +117,7 @@ export default function PlannerPage() {
     event.preventDefault();
     setError(null);
 
-    const normalizedSubject = subjectName.trim();
-    if (!normalizedSubject) {
-      setError("Subject name is required.");
-      return;
-    }
+    const normalizedSubject = subjectName.trim() || "General Study";
 
     const parsedDailyHours = Math.max(1, parseNumber(dailyHours, 4));
     const parsedPreviousScore = Math.max(0, Math.min(100, parseNumber(previousScore, 78)));
@@ -155,11 +151,27 @@ export default function PlannerPage() {
       });
 
       if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
+        const failureBody = await response.text();
+        throw new Error(`Request failed with status ${response.status}${failureBody ? `: ${failureBody}` : ""}`);
       }
 
       const data: ScheduleResponse = await response.json();
-      setResult(data);
+      const normalized: ScheduleResponse = {
+        ...data,
+        priority_analysis: Array.isArray(data.priority_analysis) ? data.priority_analysis : [],
+        daily_plan:
+          data.daily_plan && Object.keys(data.daily_plan).length
+            ? data.daily_plan
+            : { [normalizedSubject]: parsedDailyHours },
+        weekly_schedule: data.weekly_schedule ?? {},
+        ai_insights: data.ai_insights ?? "Your plan is ready. Start with highest-priority topics first.",
+      };
+
+      setResult(normalized);
+
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
     } catch (err) {
       setError(
         err instanceof Error
@@ -178,41 +190,6 @@ export default function PlannerPage() {
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-[#f6f5f8] dark:bg-[#151022] text-slate-900 dark:text-slate-100">
       <div className="layout-container flex h-full grow flex-col">
-        <header className="flex items-center justify-between whitespace-nowrap border-b border-primary/10 px-4 md:px-10 py-3 bg-[#f6f5f8] dark:bg-[#151022] sticky top-0 z-50">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center justify-center size-10 bg-purple-500/20 rounded-lg text-purple-400">
-              <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-                <path d="M10 1l2.5 5.5L18 8l-4 3.8.9 5.2L10 14.5 5.1 17l.9-5.2L2 8l5.5-1.5L10 1z" />
-              </svg>
-            </div>
-            <h2 className="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight">StudyForge AI</h2>
-          </div>
-
-          <div className="flex flex-1 justify-end gap-4 md:gap-8 items-center">
-            <nav className="hidden md:flex gap-6">
-              <a className="text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-purple-400" href="/dashboard">Dashboard</a>
-              <a className="text-sm font-medium text-purple-500" href="/schedule">Planner</a>
-              <a className="text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-purple-400" href="/study-plans">Resources</a>
-            </nav>
-            <div className="flex gap-2">
-              <button type="button" className="flex items-center justify-center rounded-xl size-10 bg-slate-200 dark:bg-purple-500/10 text-slate-700 dark:text-purple-300 hover:bg-purple-500/20 transition-colors">
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-5 h-5">
-                  <path d="M10 3a5 5 0 0 0-5 5v2.5L3.7 13a1 1 0 0 0 .8 1.5h11a1 1 0 0 0 .8-1.5L15 10.5V8a5 5 0 0 0-5-5z" />
-                </svg>
-              </button>
-              <button type="button" className="flex items-center justify-center rounded-xl size-10 bg-slate-200 dark:bg-purple-500/10 text-slate-700 dark:text-purple-300 hover:bg-purple-500/20 transition-colors">
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-5 h-5">
-                  <circle cx="10" cy="7" r="3" />
-                  <path d="M4 17c1.2-2.2 3.4-3.4 6-3.4s4.8 1.2 6 3.4" />
-                </svg>
-              </button>
-            </div>
-            <div className="bg-purple-500/30 rounded-full size-10 overflow-hidden border-2 border-purple-500/50 grid place-items-center text-xs font-bold text-white">
-              {defaultUserProfile.initials}
-            </div>
-          </div>
-        </header>
-
         <main className="flex flex-1 flex-col items-center px-4 py-8 md:px-10">
           <div className="max-w-4xl w-full flex flex-col gap-8">
             <div className="flex flex-col gap-3">
@@ -340,7 +317,7 @@ export default function PlannerPage() {
               </div>
             </form>
 
-            <div className="mt-2 flex flex-col gap-6">
+            <div ref={resultsRef} className="mt-2 flex flex-col gap-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-5 h-5 text-purple-500">

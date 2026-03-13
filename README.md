@@ -1,4 +1,5 @@
 # 🚀 StudyForge AI 
+![StudyForge AI Logo](logo.png)
 ### “An adaptive AI‑powered study planning and coaching system.” 🚀
 
 An AI‑powered adaptive study planning system that generates personalized study schedules using Machine Learning, LLM reasoning, and adaptive feedback loops.

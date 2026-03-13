@@ -40,6 +40,7 @@ export default function DashboardPage() {
   const [schedules, setSchedules] = useState<ScheduleDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [chartMode, setChartMode] = useState<"hours" | "focus">("hours");
 
   useEffect(() => {
     fetch(`${API_BASE}/schedules`)
@@ -83,6 +84,30 @@ export default function DashboardPage() {
 
     return fromDailyPlan || Number(latest.daily_hours || 0);
   }, [latest]);
+
+  const weeklyFocus = useMemo(() => {
+    const targetDailyHours = Math.max(1, Number(latest?.daily_hours || dailyHours || 0));
+    return weeklyTotals.map((entry) => {
+      const pct = Math.round((entry.total / targetDailyHours) * 100);
+      return {
+        day: entry.day,
+        value: Math.max(0, Math.min(100, pct)),
+      };
+    });
+  }, [weeklyTotals, latest, dailyHours]);
+
+  const chartSeries = useMemo(() => {
+    if (chartMode === "focus") {
+      return weeklyFocus.map((entry) => ({ day: entry.day, value: entry.value }));
+    }
+    return weeklyTotals.map((entry) => ({ day: entry.day, value: entry.total }));
+  }, [chartMode, weeklyFocus, weeklyTotals]);
+
+  const chartMax = useMemo(() => {
+    return Math.max(...chartSeries.map((entry) => entry.value), 0);
+  }, [chartSeries]);
+
+  const chartHasData = chartMax > 0;
 
   const activeDays = weeklyTotals.filter((entry) => entry.total > 0).length;
   const weeklyProgress = Math.min(100, Math.round((activeDays / 7) * 100));
@@ -210,8 +235,28 @@ export default function DashboardPage() {
                 <p className="text-slate-400 text-sm">Review your study activity over the last 7 days</p>
               </div>
               <div className="flex gap-2">
-                <button type="button" className="px-3 py-1 rounded-lg bg-purple-500/10 text-purple-300 text-xs font-bold">Hours</button>
-                <button type="button" className="px-3 py-1 rounded-lg text-slate-400 text-xs font-bold">Focus %</button>
+                <button
+                  type="button"
+                  onClick={() => setChartMode("hours")}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
+                    chartMode === "hours"
+                      ? "bg-purple-500/10 text-purple-300"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  Hours
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setChartMode("focus")}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
+                    chartMode === "focus"
+                      ? "bg-purple-500/10 text-purple-300"
+                      : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  Focus %
+                </button>
               </div>
             </div>
 
@@ -223,7 +268,7 @@ export default function DashboardPage() {
                 <div className="border-t border-slate-300/40 w-full" />
               </div>
 
-              {weeklyTotals.every((entry) => entry.total <= 0) ? (
+              {!chartHasData ? (
                 <div className="absolute inset-0 z-10 grid place-items-center text-center px-6">
                   <p className="text-sm text-slate-400">
                     No weekly activity found yet. Generate a schedule to populate this chart.
@@ -231,10 +276,9 @@ export default function DashboardPage() {
                 </div>
               ) : null}
 
-              {weeklyTotals.map((entry, index) => {
-                const maxTotal = Math.max(...weeklyTotals.map((item) => item.total), 1);
-                const height = Math.max(18, Math.round((entry.total / maxTotal) * 100));
-                const isPeak = entry.total === maxTotal && entry.total > 0;
+              {chartSeries.map((entry, index) => {
+                const height = chartHasData ? Math.max(18, Math.round((entry.value / Math.max(chartMax, 1)) * 100)) : 0;
+                const isPeak = entry.value === chartMax && entry.value > 0;
 
                 return (
                   <div key={entry.day} className="flex-1 flex flex-col items-center gap-2 group z-20">
@@ -243,7 +287,7 @@ export default function DashboardPage() {
                       style={{ height: `${height}%` }}
                     >
                       <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 bg-purple-600 text-white text-[10px] px-2 py-1 rounded transition-opacity">
-                        {safeHour(entry.total)}
+                        {chartMode === "focus" ? `${entry.value}%` : safeHour(entry.value)}
                       </div>
                     </div>
                     <span className={`text-xs font-bold uppercase tracking-tighter ${isPeak ? "text-purple-300" : "text-slate-400"}`}>

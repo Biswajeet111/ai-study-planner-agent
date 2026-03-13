@@ -103,20 +103,9 @@ Give a short explanation.
 
 
 def motivation_message(progress_score):
-    if client is None:
-        if progress_score >= 80:
-            return "Excellent momentum. Keep this consistency and you will outperform your targets."
-        if progress_score >= 50:
-            return "Solid effort. A little more focus each day will create a big jump soon."
-        return "You are not behind, you are building. Start small today and keep showing up."
-
     prompt = f"Student progress is {progress_score}%. Give a short motivational message."
-
-    try:
-        response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return response.choices[0].message.content
-    except Exception:
-        return "Stay consistent and trust the process. Every focused session moves you forward."
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[{"role":"user","content":prompt}]
+    )
+    return response.choices[0].message.content

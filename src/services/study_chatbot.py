@@ -38,26 +38,28 @@ def study_chat(question, schedule_data):
         return _local_chat_reply(question, schedule_data)
 
     prompt = f"""
-You are an AI study tutor.
-
-Student study schedule:
+You are StudyForge AI, an expert, helpful AI study tutor.
+Below is the student's study schedule and data:
+---
 {schedule_data}
+---
 
 Student question:
 {question}
 
-Answer the question using the schedule data.
-Give helpful study advice.
+Instructions:
+1. Answer the student's question directly and concisely.
+2. Only reference the schedule data if it is relevant to the student's specific question. Do NOT summarize or repeat the entire schedule unless asked.
+3. Provide actionable, helpful study advice with an encouraging tone.
+4. Ensure your response is creative, dynamic, and distinct from previous interactions.
 """
 
-    try:
-        response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[
-                {"role": "system", "content": "You are a helpful AI study tutor."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        return response.choices[0].message.content
-    except Exception:
-        return _local_chat_reply(question, schedule_data)
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {"role": "system", "content": "You are a helpful AI study tutor."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    return response.choices[0].message.content
