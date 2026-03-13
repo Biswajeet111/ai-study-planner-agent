@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Biswajeet111/ai-study-planner-agent/main/Image/Study%20Forge%20Logo.png" width="100">
+  <img src="https://raw.githubusercontent.com/Biswajeet111/ai-study-planner-agent/main/Image/Study%20Forge%20Logo.png" width="300">
 </p>
 
 <h1 align="center">🚀 StudyForge AI</h1>
