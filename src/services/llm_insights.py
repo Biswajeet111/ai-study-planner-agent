@@ -63,9 +63,13 @@ Give a short explanation.
     return response.choices[0].message.content
 
 def motivation_message(progress_score):
-    prompt = f"Student progress is {progress_score}%. Give a short motivational message."
+    prompt = f"Student progress is {progress_score}%. Give a short, unique, and highly creative motivational message to encourage the student. Vary your response format and tone."
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
-        messages=[{"role":"user","content":prompt}]
+        temperature=0.9,
+        messages=[
+            {"role": "system", "content": "You are an inspiring, enthusiastic, and highly creative AI study coach."},
+            {"role": "user", "content": prompt}
+        ]
     )
     return response.choices[0].message.content

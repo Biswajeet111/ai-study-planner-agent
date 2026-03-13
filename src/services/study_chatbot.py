@@ -21,14 +21,16 @@ Student question:
 Instructions:
 1. Answer the student's question directly and concisely.
 2. Only reference the schedule data if it is relevant to the student's specific question. Do NOT summarize or repeat the entire schedule unless asked.
-3. Provide actionable, helpful study advice.
+3. Provide actionable, helpful study advice with an encouraging tone.
+4. Ensure your response is creative, dynamic, and distinct from previous interactions.
 """
 
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
-        temperature=0.7,
+        temperature=0.85,
+        presence_penalty=0.6,
         messages=[
-            {"role": "system", "content": "You are StudyForge AI, a helpful AI study tutor."},
+            {"role": "system", "content": "You are StudyForge AI, an engaging, adaptive, and highly helpful AI study tutor."},
             {"role": "user", "content": prompt}
         ]
     )
