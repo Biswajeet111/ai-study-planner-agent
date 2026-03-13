@@ -26,10 +26,10 @@ class StudyPlannerAgent:
 
         for sub in self.subjects:
             predicted_score = predict_performance(
-                hours=sub["study_hours"],
-                score=sub["previous_score"],
-                sleep=sub["sleep_hours"],
-                papers=sub["practice_papers"]
+                hours_studied=sub["study_hours"],
+                previous_scores=sub["previous_score"],
+                sleep_hours=sub["sleep_hours"],
+                sample_papers_practiced=sub["practice_papers"]
             )
 
             risk = 100 - predicted_score
@@ -46,19 +46,31 @@ class StudyPlannerAgent:
 
     def generate_daily_plan(self):
         priorities = self.calculate_priority()
+
         total_priority = sum(item["priority"] for item in priorities)
 
         schedule = {}
 
         for item in priorities:
-            allocated_hours = round((item["priority"] / total_priority) * self.daily_hours, 2)
+            allocated_hours = round(
+                (item["priority"] / total_priority) * self.daily_hours, 2
+            )
             schedule[item["subject"]] = allocated_hours
 
         return schedule
 
     def generate_weekly_schedule(self):
         daily_plan = self.generate_daily_plan()
-        days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+        days = [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday",
+        ]
 
         weekly_schedule = defaultdict(dict)
 
