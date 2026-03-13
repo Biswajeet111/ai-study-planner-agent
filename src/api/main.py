@@ -76,10 +76,6 @@ def get_motivation(progress_score: float):
     message = motivation_message(progress_score)
     return {"motivation": message}
 
-@app.get("/db_test")
-def db_test():
-    schedules_collection.insert_one({"test": "working"})
-    return {"message": "MongoDB connected successfully"}
 
 @app.post("/generate_schedule")
 def generate_schedule(request: PlannerRequest):
@@ -91,9 +87,12 @@ def generate_schedule(request: PlannerRequest):
         daily_hours=request.daily_hours
     )
 
+    # calculate once
     priority = agent.calculate_priority()
-    daily_plan = agent.generate_daily_plan()
-    weekly_schedule = agent.generate_weekly_schedule()
+
+    daily_plan = agent.generate_daily_plan(priority)
+
+    weekly_schedule = agent.generate_weekly_schedule(daily_plan)
 
     insights = generate_insights(subjects, priority, daily_plan)
 
@@ -111,6 +110,7 @@ def generate_schedule(request: PlannerRequest):
     schedule_data["_id"] = str(result.inserted_id)
 
     return schedule_data
+
 
 @app.post("/explain_plan")
 def explain_study_plan(request: PlannerRequest):

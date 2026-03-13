@@ -4,27 +4,17 @@ from src.services.performance_analyzer import predict_performance
 
 class StudyPlannerAgent:
     def __init__(self, subjects, daily_hours):
-        """
-        subjects = list of dict
-        example:
-        [
-            {
-                "name": "Math",
-                "difficulty": 4,
-                "previous_score": 60,
-                "study_hours": 5,
-                "sleep_hours": 7,
-                "practice_papers": 3
-            }
-        ]
-        """
+
         self.subjects = subjects
         self.daily_hours = daily_hours
 
+
     def calculate_priority(self):
+
         priorities = []
 
         for sub in self.subjects:
+
             predicted_score = predict_performance(
                 hours_studied=sub["study_hours"],
                 previous_scores=sub["previous_score"],
@@ -44,32 +34,29 @@ class StudyPlannerAgent:
 
         return sorted(priorities, key=lambda x: x["priority"], reverse=True)
 
-    def generate_daily_plan(self):
-        priorities = self.calculate_priority()
+
+    def generate_daily_plan(self, priorities):
 
         total_priority = sum(item["priority"] for item in priorities)
 
         schedule = {}
 
         for item in priorities:
+
             allocated_hours = round(
                 (item["priority"] / total_priority) * self.daily_hours, 2
             )
+
             schedule[item["subject"]] = allocated_hours
 
         return schedule
 
-    def generate_weekly_schedule(self):
-        daily_plan = self.generate_daily_plan()
+
+    def generate_weekly_schedule(self, daily_plan):
 
         days = [
-            "Monday",
-            "Tuesday",
-            "Wednesday",
-            "Thursday",
-            "Friday",
-            "Saturday",
-            "Sunday",
+            "Monday", "Tuesday", "Wednesday",
+            "Thursday", "Friday", "Saturday", "Sunday"
         ]
 
         weekly_schedule = defaultdict(dict)
