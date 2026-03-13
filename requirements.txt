@@ -10,3 +10,4 @@ scikit-learn
 joblib
 dnspython
 requests
+huggingface_hub
