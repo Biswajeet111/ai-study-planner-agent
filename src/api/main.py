@@ -69,20 +69,26 @@ class ChatRequest(BaseModel):
 def home():
     return {"message": "AI Study Planner API Running"}
 
-
 @app.get("/schedules")
 def get_schedules():
 
-    data = list(
-        schedules_collection.find(
-            {"subjects": {"$exists": True}}
-        ).sort("_id", -1).limit(20)
-    )
+    if schedules_collection is None:
+        return {"error": "Database not connected"}
 
-    for d in data:
-        d["_id"] = str(d["_id"])
+    try:
+        data = list(
+            schedules_collection.find(
+                {"subjects": {"$exists": True}}
+            ).sort("_id", -1).limit(20)
+        )
 
-    return data
+        for d in data:
+            d["_id"] = str(d["_id"])
+
+        return data
+
+    except Exception as e:
+        return {"error": str(e)}
 
 
 @app.get("/motivation")
@@ -96,24 +102,31 @@ def get_motivation(progress_score: float):
 @app.get("/progress_updates")
 def get_progress_updates(limit: int = 50):
 
-    safe_limit = max(1, min(limit, 200))
+    if schedules_collection is None:
+        return {"error": "Database not connected"}
 
-    cursor = schedules_collection.find(
-        {"type": "progress_update"}
-    ).sort("_id", -1).limit(safe_limit)
+    try:
+        safe_limit = max(1, min(limit, 200))
 
-    updates = []
+        cursor = schedules_collection.find(
+            {"type": "progress_update"}
+        ).sort("_id", -1).limit(safe_limit)
 
-    for row in cursor:
-        updates.append(
-            {
-                "_id": str(row.get("_id")),
-                "type": row.get("type"),
-                "data": row.get("data", {}),
-            }
-        )
+        updates = []
 
-    return updates
+        for row in cursor:
+            updates.append(
+                {
+                    "_id": str(row.get("_id")),
+                    "type": row.get("type"),
+                    "data": row.get("data", {}),
+                }
+            )
+
+        return updates
+
+    except Exception as e:
+        return {"error": str(e)}
 
 
 # -------------------------
@@ -123,39 +136,41 @@ def get_progress_updates(limit: int = 50):
 @app.post("/generate_schedule")
 def generate_schedule(planner: PlannerRequest):
 
-    subjects = [s.model_dump() for s in planner.subjects]
-
-    agent = StudyPlannerAgent(
-        subjects=subjects,
-        daily_hours=planner.daily_hours
-    )
-
-    priority = agent.calculate_priority()
-    daily_plan = agent.generate_daily_plan(priority)
-    weekly_schedule = agent.generate_weekly_schedule(daily_plan)
-
     try:
-        insights = generate_insights(subjects, priority, daily_plan)
+
+        subjects = [s.model_dump() for s in planner.subjects]
+
+        agent = StudyPlannerAgent(
+            subjects=subjects,
+            daily_hours=planner.daily_hours
+        )
+
+        priority = agent.calculate_priority()
+        daily_plan = agent.generate_daily_plan(priority)
+        weekly_schedule = agent.generate_weekly_schedule(daily_plan)
+
+        try:
+            insights = generate_insights(subjects, priority, daily_plan)
+        except Exception as e:
+            insights = "AI insights unavailable"
+
+        schedule_data = {
+            "subjects": subjects,
+            "daily_hours": planner.daily_hours,
+            "priority_analysis": priority,
+            "daily_plan": daily_plan,
+            "weekly_schedule": weekly_schedule,
+            "ai_insights": insights
+        }
+
+        if schedules_collection:
+            result = schedules_collection.insert_one(schedule_data)
+            schedule_data["_id"] = str(result.inserted_id)
+
+        return schedule_data
+
     except Exception as e:
-        print("LLM insights failed:", e)
-        insights = "AI insights temporarily unavailable"
-
-    schedule_data = {
-        "subjects": subjects,
-        "daily_hours": planner.daily_hours,
-        "priority_analysis": priority,
-        "daily_plan": daily_plan,
-        "weekly_schedule": weekly_schedule,
-        "ai_insights": insights
-    }
-
-    try:
-        result = schedules_collection.insert_one(schedule_data)
-        schedule_data["_id"] = str(result.inserted_id)
-    except Exception as e:
-        print("MongoDB insert error:", e)
-
-    return schedule_data
+        return {"error": str(e)}
 
 
 # -------------------------

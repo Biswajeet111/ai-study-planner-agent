@@ -1,12 +1,18 @@
+import os
 from pymongo import MongoClient
 
-MONGO_URI = "mongodb+srv://biswajeetk497_db_user:j0LZPbs2TuGVpZJB@cluster0.jwayjem.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+MONGO_URI = os.getenv("MONGODB_URI")
 
-client = MongoClient(MONGO_URI)
+try:
+    client = MongoClient(MONGO_URI)
 
-db = client["study_planner"]
+    db = client["studyforge"]
 
-students_collection = db["students"]
-schedules_collection = db["schedules"]
+    schedules_collection = db["schedules"]
 
-print("MongoDB connected successfully")
+    print("MongoDB connected successfully")
+
+except Exception as e:
+    print("MongoDB connection failed:", e)
+
+    schedules_collection = None
