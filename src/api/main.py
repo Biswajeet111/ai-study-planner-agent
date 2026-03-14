@@ -240,6 +240,9 @@ def update_progress(progress: ProgressUpdate):
 @app.post("/study_chat")
 def study_chatbot(chat: ChatRequest):
 
+    if schedules_collection is None:
+        return {"error": "Database not connected"}
+
     schedule = schedules_collection.find_one(
         {"subjects": {"$exists": True}},
         sort=[("_id", -1)]
@@ -250,7 +253,10 @@ def study_chatbot(chat: ChatRequest):
 
     schedule["_id"] = str(schedule["_id"])
 
-    answer = study_chat(chat.question, schedule)
+    try:
+        answer = study_chat(chat.question, schedule)
+    except Exception as e:
+        return {"error": str(e)}
 
     return {
         "question": chat.question,

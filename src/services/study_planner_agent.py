@@ -1,3 +1,5 @@
+from collections import defaultdict
+from src.services.performance_analyzer import predict_performance
 class StudyPlannerAgent:
 
     def __init__(self, subjects, daily_hours):
