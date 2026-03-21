@@ -25,10 +25,7 @@ type ScheduleRow = {
   focusLevel: 1 | 2 | 3;
 };
 
-const API_URL =
-  typeof window === "undefined"
-    ? `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000"}/generate_schedule`
-    : "/api/generate_schedule";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://studyforge-api-ma0b.onrender.com";
 
 const difficultyMap: Record<string, number> = {
   easy: 2,
@@ -150,7 +147,7 @@ export default function PlannerPage() {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 12000);
 
-      const response = await fetch(API_URL, {
+      const response = await fetch(`${API_BASE}/generate_schedule`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

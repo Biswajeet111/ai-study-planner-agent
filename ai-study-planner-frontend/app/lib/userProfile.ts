@@ -1,5 +1,5 @@
 export const defaultUserProfile = {
-  fullName: "Yash Raj",
-  initials: "YR",
+  fullName: "StudyForge Student",
+  initials: "ST",
   major: "Computer Science",
 };

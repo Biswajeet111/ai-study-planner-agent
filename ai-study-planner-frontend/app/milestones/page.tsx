@@ -3,10 +3,7 @@
 import { useEffect, useState } from "react";
 import { defaultUserProfile } from "../lib/userProfile";
 
-const API_BASE =
-  typeof window === "undefined"
-    ? process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000"
-    : process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://studyforge-api-ma0b.onrender.com";
 
 type Badge = {
   id: string;
