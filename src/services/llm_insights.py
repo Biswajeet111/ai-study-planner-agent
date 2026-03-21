@@ -1,4 +1,4 @@
-﻿import os
+import os
 from dotenv import load_dotenv
 from groq import Groq
 
@@ -102,10 +102,28 @@ Give a short explanation.
         return "This plan prioritizes high-risk subjects first and balances all subjects across the week."
 
 
+def _local_motivation(progress_score):
+    if progress_score >= 80:
+        return "Outstanding work! You're crushing your goals."
+    elif progress_score >= 50:
+        return "Good progress. Keep the momentum going!"
+    else:
+        return "Start small today. Every minute of focus counts towards your goal!"
+
 def motivation_message(progress_score):
-    prompt = f"Student progress is {progress_score}%. Give a short motivational message."
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[{"role":"user","content":prompt}]
-    )
-    return response.choices[0].message.content
+    if client is None:
+        return _local_motivation(progress_score)
+        
+    prompt = f"Student progress is {progress_score}%. Give a short, highly-encouraging motivational message."
+    
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": "You are an inspiring AI study coach."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return response.choices[0].message.content
+    except Exception:
+        return _local_motivation(progress_score)
