@@ -254,11 +254,11 @@ uvicorn src.api.main:app --reload
 - AI-driven learning platforms
 
 ## 🚀 Future Improvements
-- [ ] AI adaptive schedule updates
-- [ ] Study streak system
-- [ ] Leaderboard & gamification
+- [x] AI adaptive schedule updates
+- [x] Study streak system
+- [x] Leaderboard & gamification
 - [ ] AI tutor voice assistant
-- [ ] Performance analytics dashboard
+- [x] Performance analytics dashboard
 
 ## 👨‍💻 Contributors
 - **[Biswajeet Kumar](https://github.com/Biswajeet111)** - AI / Backend Developer

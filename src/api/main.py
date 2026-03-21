@@ -22,12 +22,8 @@ app = FastAPI(title="AI Study Planner API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "https://studyai-eight-delta.vercel.app",
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -73,7 +69,7 @@ def home():
 def get_schedules():
 
     if schedules_collection is None:
-        return {"error": "Database not connected"}
+        return []
 
     try:
         data = list(
@@ -103,7 +99,7 @@ def get_motivation(progress_score: float):
 def get_progress_updates(limit: int = 50):
 
     if schedules_collection is None:
-        return {"error": "Database not connected"}
+        return []
 
     try:
         safe_limit = max(1, min(limit, 200))
@@ -163,9 +159,11 @@ def generate_schedule(planner: PlannerRequest):
             "ai_insights": insights
         }
 
-        if schedules_collection:
+        if schedules_collection is not None:
             result = schedules_collection.insert_one(schedule_data)
             schedule_data["_id"] = str(result.inserted_id)
+        else:
+            schedule_data["_id"] = "local_id"
 
         return schedule_data
 
@@ -221,10 +219,11 @@ def update_progress(progress: ProgressUpdate):
         "xp": xp
     }
 
-    schedules_collection.insert_one({
-        "type": "progress_update",
-        "data": data
-    })
+    if schedules_collection is not None:
+        schedules_collection.insert_one({
+            "type": "progress_update",
+            "data": data
+        })
 
     return {
         "message": "Progress updated successfully",
@@ -241,7 +240,7 @@ def update_progress(progress: ProgressUpdate):
 def study_chatbot(chat: ChatRequest):
 
     if schedules_collection is None:
-        return {"error": "Database not connected"}
+        return _local_chat_reply(chat.question, {})
 
     schedule = schedules_collection.find_one(
         {"subjects": {"$exists": True}},

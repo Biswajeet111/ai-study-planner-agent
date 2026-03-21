@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# StudyForge AI - Frontend Application
 
-## Getting Started
+This directory contains the Next.js frontend for **StudyForge AI**, an adaptive AI-powered study planning and coaching system. 
+The application provides a gorgeous, modern UI for interacting with the Machine Learning and LLM APIs served by the backend.
 
-First, run the development server:
+## 🌟 Key Features
+- **Dashboard & Analytics**: Track active students, optimization hours, XP, and weekly study streaks.
+- **Adaptive Planner UI**: Easily input your upcoming exam details and course difficulty to receive a tailored Groq LLM study plan.
+- **AI Chat Tutor**: A seamlessly integrated LLM chat interface providing context-aware answers to student questions based on their generated study schedule.
+- **Progress Tracking**: Log your actual study hours and test scores, updating your live mastery stats.
+- **Responsive & Dynamic Design**: Built with Next.js 15, React 19, and TailwindCSS 4, featuring a beautiful dark/light mode adaptable layout with micro-animations.
+
+## 🚀 Getting Started
+
+### Prerequisites
+Make sure you have Node.js and NPM installed. Also ensure your FastAPI backend is running locally on port `8000` or hosted remotely.
+
+### Installation
+Clone the repository, navigate into this frontend folder, and install the modules:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd ai-study-planner-frontend
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Environment Variables
+For local development, the application defaults to connecting to `http://127.0.0.1:8000/`. 
+If you are deploying to Vercel, simply provide the URL of your Render backend as an environment variable in your Vercel project settings:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```env
+NEXT_PUBLIC_API_BASE_URL=https://your-backend-app.onrender.com
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Running the App Locally
+```bash
+npm run dev
+```
 
-## Learn More
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the outcome.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🌐 Deployment
+This front-end is fully optimized to be deployed seamlessly on **Vercel**. 
+1. Link your GitHub repository to Vercel.
+2. Select the `ai-study-planner-frontend` directory as the Root Directory.
+3. Configure the `NEXT_PUBLIC_API_BASE_URL` Environment Variable to point to your live backend.
+4. Click **Deploy**.

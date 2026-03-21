@@ -1,4 +1,4 @@
-﻿import os
+import os
 from dotenv import load_dotenv
 from groq import Groq
 
@@ -54,12 +54,14 @@ Instructions:
 4. Ensure your response is creative, dynamic, and distinct from previous interactions.
 """
 
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[
-            {"role": "system", "content": "You are a helpful AI study tutor."},
-            {"role": "user", "content": prompt}
-        ]
-    )
-
-    return response.choices[0].message.content
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": "You are a helpful AI study tutor."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return _local_chat_reply(question, schedule_data)
