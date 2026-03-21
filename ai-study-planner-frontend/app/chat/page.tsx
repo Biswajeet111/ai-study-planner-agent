@@ -158,7 +158,7 @@ export default function ChatPage() {
         {
           id: nextId.current++,
           role: "ai",
-          text: "I can't reach the API right now. Please make sure backend is running on port 8000.",
+          text: "I can't reach the backend right now. If it's on Render free-tier, it may take 60 seconds to wake up.",
         },
       ]);
     } finally {

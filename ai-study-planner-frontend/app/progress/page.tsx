@@ -283,7 +283,7 @@ export default function ProgressPage() {
                   <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-white/80"><path d="M10 1l2.2 5 5.3.6-3.9 3.6 1 5.2-4.6-2.5-4.6 2.5 1-5.2L2.5 6.6 7.8 6 10 1z" /></svg>
                   <span className="text-xs font-bold uppercase tracking-widest text-white/80">AI Insights</span>
                 </div>
-                <h3 className="text-xl font-bold mb-2">Keep it up, Alex!</h3>
+                <h3 className="text-xl font-bold mb-2">Keep it up, {defaultUserProfile.fullName.split(' ')[0]}!</h3>
                 <p className="text-sm text-white/90 leading-relaxed">{motivationText}</p>
                 <a href="/insights" className="mt-4 block text-center w-full py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-lg text-xs font-bold transition-all border border-white/20">
                   VIEW LEARNING PLAN
@@ -392,64 +392,73 @@ export default function ProgressPage() {
             </section>
 
             <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <form onSubmit={handleLogHours} className="bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10 p-6 flex flex-col gap-6">
+              <div className="bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10 p-6 flex flex-col gap-6">
                 <div className="flex items-center gap-2">
                   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-5 h-5 text-purple-400"><circle cx="10" cy="10" r="7" /><path d="M10 6v4l2.5 2" /></svg>
                   <h3 className="text-xl font-bold">Log Study Hours</h3>
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 block">Select Course</label>
-                    <select
-                      className="w-full bg-slate-200 dark:bg-white/10 border-none rounded-lg focus:ring-2 focus:ring-purple-500 text-slate-900 dark:text-white transition-all py-3 px-4"
-                      value={selectedCourse}
-                      onChange={(e) => setSelectedCourse(e.target.value)}
-                    >
-                      {subjects.length ? subjects.map((subject) => (
-                        <option key={subject.name} value={subject.name}>{subject.name}</option>
-                      )) : <option value="">No course available</option>}
-                    </select>
+                {!subjects.length ? (
+                  <div className="flex flex-col items-center justify-center p-8 text-center bg-slate-200/50 dark:bg-[#151022]/50 rounded-lg border border-dashed border-slate-300 dark:border-purple-500/20">
+                    <p className="text-slate-500 dark:text-slate-400 mb-4">You need an active schedule to log progress.</p>
+                    <a href="/schedule" className="px-6 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-purple-500/20">Create a Schedule</a>
                   </div>
+                ) : (
+                  <form onSubmit={handleLogHours} className="flex flex-col gap-6 flex-1">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 block">Select Course</label>
+                        <select
+                          className="w-full bg-slate-200 dark:bg-white/10 border-none rounded-lg focus:ring-2 focus:ring-purple-500 text-slate-900 dark:text-white transition-all py-3 px-4"
+                          value={selectedCourse}
+                          onChange={(e) => setSelectedCourse(e.target.value)}
+                        >
+                          {subjects.map((subject) => (
+                            <option key={subject.name} value={subject.name}>{subject.name}</option>
+                          ))}
+                        </select>
+                      </div>
 
-                  <div>
-                    <label className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 block">Hours Studied Today</label>
-                    <div className="flex gap-4">
-                      <input
-                        className="w-full bg-slate-200 dark:bg-white/10 border-none rounded-lg focus:ring-2 focus:ring-purple-500 text-slate-900 dark:text-white transition-all py-3 px-4"
-                        type="number"
-                        min={0.5}
-                        step={0.5}
-                        value={hoursInput}
-                        onChange={(e) => setHoursInput(e.target.value)}
-                      />
-                      <button type="submit" disabled={submitLoading} className="bg-purple-500 text-white font-bold px-8 rounded-lg hover:bg-purple-500/90 transition-all disabled:opacity-60">
-                        {submitLoading ? "..." : "LOG"}
-                      </button>
+                      <div>
+                        <label className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 block">Hours Studied Today</label>
+                        <div className="flex gap-4">
+                          <input
+                            className="w-full bg-slate-200 dark:bg-white/10 border-none rounded-lg focus:ring-2 focus:ring-purple-500 text-slate-900 dark:text-white transition-all py-3 px-4"
+                            type="number"
+                            min={0.5}
+                            step={0.5}
+                            value={hoursInput}
+                            onChange={(e) => setHoursInput(e.target.value)}
+                          />
+                          <button type="submit" disabled={submitLoading} className="bg-purple-500 text-white font-bold px-8 rounded-lg hover:bg-purple-500/90 transition-all disabled:opacity-60">
+                            {submitLoading ? "..." : "LOG"}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 block">Latest Test Score (0-100)</label>
+                        <input
+                          className="w-full bg-slate-200 dark:bg-white/10 border-none rounded-lg focus:ring-2 focus:ring-purple-500 text-slate-900 dark:text-white transition-all py-3 px-4"
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={scoreInput}
+                          onChange={(e) => setScoreInput(e.target.value)}
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 block">Latest Test Score (0-100)</label>
-                    <input
-                      className="w-full bg-slate-200 dark:bg-white/10 border-none rounded-lg focus:ring-2 focus:ring-purple-500 text-slate-900 dark:text-white transition-all py-3 px-4"
-                      type="number"
-                      min={0}
-                      max={100}
-                      value={scoreInput}
-                      onChange={(e) => setScoreInput(e.target.value)}
-                    />
-                  </div>
-                </div>
+                    {submitMessage ? (
+                      <div className="rounded-lg border border-purple-500/20 bg-purple-500/10 px-3 py-2 text-xs text-purple-300">{submitMessage}</div>
+                    ) : null}
 
-                {submitMessage ? (
-                  <div className="rounded-lg border border-purple-500/20 bg-purple-500/10 px-3 py-2 text-xs text-purple-300">{submitMessage}</div>
-                ) : null}
-
-                <div className="mt-auto p-4 rounded-lg bg-purple-500/5 border border-purple-500/10">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Tip: Accurate logging helps the AI refine your personalized learning velocity and exam predictions.</p>
-                </div>
-              </form>
+                    <div className="mt-auto p-4 rounded-lg bg-purple-500/5 border border-purple-500/10">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Tip: Accurate logging helps the AI refine your personalized learning velocity and exam predictions.</p>
+                    </div>
+                  </form>
+                )}
+              </div>
 
               <div className="bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10 p-6">
                 <div className="flex items-center justify-between mb-6">

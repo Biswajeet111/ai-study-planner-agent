@@ -69,11 +69,9 @@ function tagStyle(activityType: string) {
 }
 
 export default function PlannerPage() {
-  const [subjectName, setSubjectName] = useState("Mathematics");
+  type SubjectState = { id: number; name: string; difficulty: "easy" | "medium" | "hard"; previousScore: string; practiceInput: string };
+  const [subjects, setSubjects] = useState<SubjectState[]>([{ id: Date.now(), name: "Mathematics", difficulty: "medium", previousScore: "78", practiceInput: "" }]);
   const [dailyHours, setDailyHours] = useState("4");
-  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
-  const [previousScore, setPreviousScore] = useState("78");
-  const [practiceInput, setPracticeInput] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -117,35 +115,32 @@ export default function PlannerPage() {
     event.preventDefault();
     setError(null);
 
-    const normalizedSubject = subjectName.trim() || "General Study";
-
     const parsedDailyHours = Math.max(1, parseNumber(dailyHours, 4));
-    const parsedPreviousScore = Math.max(0, Math.min(100, parseNumber(previousScore, 78)));
-
-    const parsedPractice = (() => {
-      if (!practiceInput.trim()) return 1;
-      if (/^https?:\/\//i.test(practiceInput.trim())) return 1;
-      return Math.max(1, parseNumber(practiceInput, 1));
-    })();
 
     const payload = {
       daily_hours: parsedDailyHours,
-      subjects: [
-        {
-          name: normalizedSubject,
-          difficulty: difficultyMap[difficulty],
-          previous_score: parsedPreviousScore,
-          study_hours: Math.max(1, parsedDailyHours),
+      subjects: subjects.map(s => {
+        const parsedPractice = (() => {
+          if (!s.practiceInput.trim()) return 1;
+          if (/^https?:\/\//i.test(s.practiceInput.trim())) return 1;
+          return Math.max(1, parseNumber(s.practiceInput, 1));
+        })();
+
+        return {
+          name: s.name.trim() || "General Study",
+          difficulty: difficultyMap[s.difficulty] || 3,
+          previous_score: Math.max(0, Math.min(100, parseNumber(s.previousScore, 78))),
+          study_hours: Math.max(1, parsedDailyHours / subjects.length),
           sleep_hours: 7,
           practice_papers: parsedPractice,
-        },
-      ],
+        };
+      }),
     };
 
     setLoading(true);
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 12000);
+      const timeout = setTimeout(() => controller.abort(), 60000);
 
       const response = await fetch(`${API_BASE}/generate_schedule`, {
         method: "POST",
@@ -162,13 +157,14 @@ export default function PlannerPage() {
       }
 
       const data: ScheduleResponse = await response.json();
+      const firstSubName = subjects[0]?.name?.trim() || "General Study";
       const normalized: ScheduleResponse = {
         ...data,
         priority_analysis: Array.isArray(data.priority_analysis) ? data.priority_analysis : [],
         daily_plan:
           data.daily_plan && Object.keys(data.daily_plan).length
             ? data.daily_plan
-            : { [normalizedSubject]: parsedDailyHours },
+            : { [firstSubName]: parsedDailyHours },
         weekly_schedule: data.weekly_schedule ?? {},
         ai_insights: data.ai_insights ?? "Your plan is ready. Start with highest-priority topics first.",
       };
@@ -179,24 +175,30 @@ export default function PlannerPage() {
         resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 50);
     } catch (err) {
+      const fallbackPriority = subjects.map(s => {
+        const score = parseNumber(s.previousScore, 78);
+        return {
+          subject: s.name.trim() || "General Study",
+          predicted_score: score,
+          risk: Math.max(0, 100 - score),
+          priority: Math.max(40, 100 - score),
+        };
+      });
+      const fallbackDaily = Object.fromEntries(subjects.map(s => [s.name.trim() || "General Study", parsedDailyHours / subjects.length]));
+      const fallbackWeeklyDay = Object.fromEntries(subjects.map(s => [s.name.trim() || "General Study", parsedDailyHours / subjects.length]));
+      const fallbackWeeklyOff = Object.fromEntries(subjects.map(s => [s.name.trim() || "General Study", 0]));
+
       const fallbackResult: ScheduleResponse = {
-        priority_analysis: [
-          {
-            subject: normalizedSubject,
-            predicted_score: parsedPreviousScore,
-            risk: Math.max(0, 100 - parsedPreviousScore),
-            priority: Math.max(40, 100 - parsedPreviousScore),
-          },
-        ],
-        daily_plan: { [normalizedSubject]: parsedDailyHours },
+        priority_analysis: fallbackPriority,
+        daily_plan: fallbackDaily,
         weekly_schedule: {
-          Monday: { [normalizedSubject]: parsedDailyHours },
-          Tuesday: { [normalizedSubject]: parsedDailyHours },
-          Wednesday: { [normalizedSubject]: parsedDailyHours },
-          Thursday: { [normalizedSubject]: parsedDailyHours },
-          Friday: { [normalizedSubject]: parsedDailyHours },
-          Saturday: { [normalizedSubject]: 0 },
-          Sunday: { [normalizedSubject]: 0 },
+          Monday: fallbackWeeklyDay,
+          Tuesday: fallbackWeeklyDay,
+          Wednesday: fallbackWeeklyDay,
+          Thursday: fallbackWeeklyDay,
+          Friday: fallbackWeeklyDay,
+          Saturday: fallbackWeeklyOff,
+          Sunday: fallbackWeeklyOff,
         },
         ai_insights: "API is unavailable right now, so a local fallback plan was generated. Start with this and retry backend generation once the API is up.",
       };
@@ -236,27 +238,9 @@ export default function PlannerPage() {
             </div>
 
             <form onSubmit={handleGenerate} className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-purple-500/10 rounded-xl p-6 md:p-8 shadow-sm">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="mb-6">
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Subject Name</span>
-                  <div className="relative">
-                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                      <path d="M4 4h10a2 2 0 0 1 2 2v10H6a2 2 0 0 1-2-2V4z" />
-                      <path d="M6 4v12" />
-                    </svg>
-                    <input
-                      className="w-full pl-11 pr-4 h-12 rounded-lg border border-slate-200 dark:border-purple-500/20 bg-slate-50 dark:bg-[#151022]/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all"
-                      placeholder="e.g. Advanced Physics"
-                      type="text"
-                      value={subjectName}
-                      onChange={(e) => setSubjectName(e.target.value)}
-                      required
-                    />
-                  </div>
-                </label>
-
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Daily Study Hours</span>
+                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Total Daily Study Hours Limit</span>
                   <div className="relative">
                     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                       <circle cx="10" cy="10" r="7" />
@@ -275,60 +259,37 @@ export default function PlannerPage() {
                     />
                   </div>
                 </label>
+              </div>
 
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Difficulty Level</span>
-                  <div className="relative">
-                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                      <path d="M4 14h2M8 10h2M12 6h2" />
-                      <path d="M3 16h14" />
-                    </svg>
-                    <select
-                      className="w-full pl-11 pr-4 h-12 rounded-lg border border-slate-200 dark:border-purple-500/20 bg-slate-50 dark:bg-[#151022]/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all appearance-none"
-                      value={difficulty}
-                      onChange={(e) => setDifficulty(e.target.value as "easy" | "medium" | "hard")}
-                    >
-                      <option value="easy">Beginner / Easy</option>
-                      <option value="medium">Intermediate / Medium</option>
-                      <option value="hard">Advanced / Hard</option>
-                    </select>
+              <div className="space-y-6">
+                {subjects.map((sub, idx) => (
+                  <div key={sub.id} className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-slate-200 dark:border-white/10 relative">
+                    <div className="absolute -top-2 right-0">
+                      {subjects.length > 1 && (
+                        <button type="button" onClick={() => setSubjects(subjects.filter(s => s.id !== sub.id))} className="text-rose-500 hover:text-rose-600 text-sm font-bold bg-white dark:bg-slate-900 px-2 rounded-full border border-rose-200 dark:border-rose-900">Remove</button>
+                      )}
+                    </div>
+                    <label className="flex flex-col gap-2">
+                       <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Subject {idx + 1} Name</span>
+                       <input className="w-full px-4 h-12 rounded-lg border border-slate-200 dark:border-purple-500/20 bg-slate-50 dark:bg-[#151022]/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500/50 outline-none transition-all" placeholder="e.g. Mathematics" value={sub.name} onChange={(e) => setSubjects(subjects.map(s => s.id === sub.id ? { ...s, name: e.target.value } : s))} required />
+                    </label>
+                    <label className="flex flex-col gap-2">
+                       <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Difficulty Level</span>
+                       <select className="w-full px-4 h-12 rounded-lg border border-slate-200 dark:border-purple-500/20 bg-slate-50 dark:bg-[#151022]/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500/50 outline-none transition-all appearance-none" value={sub.difficulty} onChange={(e) => setSubjects(subjects.map(s => s.id === sub.id ? { ...s, difficulty: e.target.value as any } : s))}>
+                         <option value="easy">Beginner / Easy</option><option value="medium">Intermediate / Medium</option><option value="hard">Advanced / Hard</option>
+                       </select>
+                    </label>
+                    <label className="flex flex-col gap-2">
+                       <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Previous Score (%)</span>
+                       <input className="w-full px-4 h-12 rounded-lg border border-slate-200 dark:border-purple-500/20 bg-slate-50 dark:bg-[#151022]/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500/50 outline-none transition-all" placeholder="e.g. 78" value={sub.previousScore} onChange={(e) => setSubjects(subjects.map(s => s.id === sub.id ? { ...s, previousScore: e.target.value } : s))} />
+                    </label>
+                    <label className="flex flex-col gap-2">
+                       <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Practice Papers</span>
+                       <input className="w-full px-4 h-12 rounded-lg border border-slate-200 dark:border-purple-500/20 bg-slate-50 dark:bg-[#151022]/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500/50 outline-none transition-all" placeholder="Count or URL" value={sub.practiceInput} onChange={(e) => setSubjects(subjects.map(s => s.id === sub.id ? { ...s, practiceInput: e.target.value } : s))} />
+                    </label>
                   </div>
-                </label>
-
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Previous Score (%)</span>
-                  <div className="relative">
-                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                      <path d="M4 14l3-3 2 2 5-5" />
-                      <path d="M4 16h12" />
-                    </svg>
-                    <input
-                      className="w-full pl-11 pr-4 h-12 rounded-lg border border-slate-200 dark:border-purple-500/20 bg-slate-50 dark:bg-[#151022]/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all"
-                      placeholder="e.g. 78"
-                      type="text"
-                      value={previousScore}
-                      onChange={(e) => setPreviousScore(e.target.value)}
-                    />
-                  </div>
-                </label>
-
-                <label className="flex flex-col gap-2 md:col-span-2">
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Practice Papers (Link or Count)</span>
-                  <div className="relative">
-                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                      <path d="M7 10h6" />
-                      <path d="M6 6h8a2 2 0 0 1 0 4h-1" />
-                      <path d="M14 14H6a2 2 0 0 1 0-4h1" />
-                    </svg>
-                    <input
-                      className="w-full pl-11 pr-4 h-12 rounded-lg border border-slate-200 dark:border-purple-500/20 bg-slate-50 dark:bg-[#151022]/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all"
-                      placeholder="Enter URL or paper count"
-                      type="text"
-                      value={practiceInput}
-                      onChange={(e) => setPracticeInput(e.target.value)}
-                    />
-                  </div>
-                </label>
+                ))}
+                <button type="button" onClick={() => setSubjects([...subjects, { id: Date.now(), name: "", difficulty: "medium", previousScore: "", practiceInput: "" }])} className="text-sm font-bold text-purple-600 dark:text-purple-400 hover:text-purple-500 flex items-center gap-1"><svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg> Add another subject</button>
               </div>
 
               {error ? (
