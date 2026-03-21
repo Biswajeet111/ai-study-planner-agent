@@ -61,7 +61,7 @@ class ChatRequest(BaseModel):
 # Routes
 # -------------------------
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def home():
     return {"message": "AI Study Planner API Running"}
 
